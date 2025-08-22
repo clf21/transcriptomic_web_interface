@@ -43,33 +43,28 @@ export const Dashboard: React.FC = () => {
   const currentGeneExpression = uploadedData.isUploaded ? uploadedData.geneExpression : [];
 
   const getPlotData = (): PlotPoint[] => {
-    // Use real analysis data if available
-    if (uploadedData.isUploaded && realAnalysisData.pcaData.length > 0) {
+    // If no uploaded data, use mock data
+    if (!uploadedData.isUploaded) {
       switch (selectedPlotType) {
         case 'pca':
-          return realAnalysisData.pcaData;
+          return generatePCAData();
         case 'volcano':
-          return realAnalysisData.volcanoData;
+          return generateVolcanoData(selectedContrast);
         case 'ma':
-          return realAnalysisData.maData;
+          return generateMAData(selectedContrast);
         default:
           return [];
       }
     }
     
-    // Return empty array if no uploaded data to prevent NaN errors
-    if (uploadedData.isUploaded && realAnalysisData.pcaData.length === 0) {
-      return [];
-    }
-    
-    // Fallback to mock data
+    // Use real analysis data if available for uploaded data
     switch (selectedPlotType) {
       case 'pca':
-        return generatePCAData();
+        return realAnalysisData.pcaData.length > 0 ? realAnalysisData.pcaData : [];
       case 'volcano':
-        return generateVolcanoData(selectedContrast);
+        return realAnalysisData.volcanoData.length > 0 ? realAnalysisData.volcanoData : [];
       case 'ma':
-        return generateMAData(selectedContrast);
+        return realAnalysisData.maData.length > 0 ? realAnalysisData.maData : [];
       default:
         return [];
     }
