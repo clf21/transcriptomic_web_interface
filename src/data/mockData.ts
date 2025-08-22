@@ -1,12 +1,12 @@
-import { Sample, GeneExpression, Contrast } from '../types';
+import { Sample, GeneExpression, Contrast, TraitInfo } from '../types';
 
 export const mockSamples: Sample[] = [
   {
     id: 'CTRL_1',
     name: 'Control_Rep1',
-    condition: 'Control',
+    condition: 'Control Group - Untreated',
     replicate: 1,
-    batch: 'Batch_A',
+    batch: 'Processing Batch Alpha',
     librarySize: 45000000,
     mappingRate: 92.5,
     rnaIntegrity: 8.2,
@@ -15,9 +15,9 @@ export const mockSamples: Sample[] = [
   {
     id: 'CTRL_2',
     name: 'Control_Rep2',
-    condition: 'Control',
+    condition: 'Control Group - Untreated',
     replicate: 2,
-    batch: 'Batch_A',
+    batch: 'Processing Batch Alpha',
     librarySize: 42000000,
     mappingRate: 91.8,
     rnaIntegrity: 8.0,
@@ -26,9 +26,9 @@ export const mockSamples: Sample[] = [
   {
     id: 'CTRL_3',
     name: 'Control_Rep3',
-    condition: 'Control',
+    condition: 'Control Group - Untreated',
     replicate: 3,
-    batch: 'Batch_B',
+    batch: 'Processing Batch Beta',
     librarySize: 47000000,
     mappingRate: 93.2,
     rnaIntegrity: 8.4,
@@ -37,9 +37,9 @@ export const mockSamples: Sample[] = [
   {
     id: 'TREAT_1',
     name: 'Treatment_Rep1',
-    condition: 'Treatment',
+    condition: 'Drug Treatment - High Dose',
     replicate: 1,
-    batch: 'Batch_A',
+    batch: 'Processing Batch Alpha',
     librarySize: 44000000,
     mappingRate: 90.5,
     rnaIntegrity: 7.8,
@@ -48,9 +48,9 @@ export const mockSamples: Sample[] = [
   {
     id: 'TREAT_2',
     name: 'Treatment_Rep2',
-    condition: 'Treatment',
+    condition: 'Drug Treatment - High Dose',
     replicate: 2,
-    batch: 'Batch_B',
+    batch: 'Processing Batch Beta',
     librarySize: 46000000,
     mappingRate: 92.0,
     rnaIntegrity: 8.1,
@@ -59,9 +59,9 @@ export const mockSamples: Sample[] = [
   {
     id: 'TREAT_3',
     name: 'Treatment_Rep3',
-    condition: 'Treatment',
+    condition: 'Drug Treatment - High Dose',
     replicate: 3,
-    batch: 'Batch_B',
+    batch: 'Processing Batch Beta',
     librarySize: 43000000,
     mappingRate: 91.2,
     rnaIntegrity: 7.9,
@@ -199,6 +199,33 @@ export const generateVolcanoData = (contrastId: string = 'treat_vs_ctrl') => {
 
   return baseData;
 };
+
+export const mockTraits: TraitInfo[] = [
+  {
+    name: 'condition',
+    type: 'categorical',
+    values: ['Control Group - Untreated', 'Drug Treatment - High Dose'],
+    uniqueCount: 2
+  },
+  {
+    name: 'batch',
+    type: 'categorical', 
+    values: ['Processing Batch Alpha', 'Processing Batch Beta'],
+    uniqueCount: 2
+  },
+  {
+    name: 'replicate',
+    type: 'categorical',
+    values: ['1', '2', '3'],
+    uniqueCount: 3
+  },
+  {
+    name: 'rnaIntegrity',
+    type: 'numerical',
+    values: ['7.8', '7.9', '8.0', '8.1', '8.2', '8.4'],
+    uniqueCount: 6
+  }
+];
 
 export const generateMAData = (contrastId: string = 'treat_vs_ctrl') => {
   // Generate MA plot data based on contrast

@@ -6,12 +6,14 @@ interface ScatterPlotProps {
   data: PlotPoint[];
   config: PlotConfig;
   onPointClick?: (point: PlotPoint) => void;
+  legendData?: { label: string; color: string }[];
 }
 
 export const ScatterPlot: React.FC<ScatterPlotProps> = ({ 
   data, 
   config, 
-  onPointClick 
+  onPointClick,
+  legendData
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoveredPoint, setHoveredPoint] = useState<PlotPoint | null>(null);
@@ -300,6 +302,35 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({
           </div>
         )}
       </div>
+
+      {/* Legend */}
+      {legendData && legendData.length > 0 && (
+        <div className="mt-4 bg-gray-50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Legend</h4>
+          <div className="flex flex-wrap gap-x-6 gap-y-3">
+            {legendData.map((item, index) => (
+              <div key={index} className="flex items-center gap-2 min-w-0">
+                <div
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span 
+                  className="text-sm text-gray-700" 
+                  title={item.label}
+                  style={{ 
+                    maxWidth: '250px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {item.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

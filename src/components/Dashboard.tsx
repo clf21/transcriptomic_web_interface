@@ -4,16 +4,17 @@ import { SampleInfoTable } from './SampleInfoTable';
 import { ScatterPlot } from './ScatterPlot';
 import { PlotSelector, PlotType } from './PlotSelector';
 import { ContrastSelector } from './ContrastSelector';
+import { TraitSelector } from './TraitSelector';
 import { DataUpload } from './DataUpload';
 import { AnalysisResults } from './AnalysisResults';
-import { mockSamples, mockContrasts, generatePCAData, generateVolcanoData, generateMAData } from '../data/mockData';
+import { mockSamples, mockContrasts, mockTraits, generatePCAData, generateVolcanoData, generateMAData } from '../data/mockData';
 import { Sample, PlotPoint, GeneExpression, UploadedData } from '../types';
 import { Activity, Database, BarChart3, Upload } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const [selectedSample, setSelectedSample] = useState<Sample | null>(null);
   const [selectedPlotType, setSelectedPlotType] = useState<PlotType>('pca');
   const [selectedContrast, setSelectedContrast] = useState<string>('treat_vs_ctrl');
+  const [selectedColorTrait, setSelectedColorTrait] = useState<string>('condition');
   const [showUpload, setShowUpload] = useState(false);
   const [uploadedData, setUploadedData] = useState<UploadedData>({
     samples: [],
@@ -41,13 +42,96 @@ export const Dashboard: React.FC = () => {
   // Use uploaded data if available, otherwise use mock data
   const currentSamples = uploadedData.isUploaded ? uploadedData.samples : mockSamples;
   const currentGeneExpression = uploadedData.isUploaded ? uploadedData.geneExpression : [];
+  const currentTraits = uploadedData.isUploaded ? uploadedData.availableTraits : mockTraits;
+
+  // Helper function to generate colors based on trait values
+  const getColorForTraitValue = (traitName: string, value: any) => {
+    const colors = [
+      '#2563EB', // blue
+      '#F97316', // orange  
+      '#10B981', // green
+      '#8B5CF6', // purple
+      '#EF4444', // red
+      '#F59E0B', // yellow
+      '#06B6D4', // cyan
+      '#EC4899', // pink
+      '#84CC16', // lime
+      '#6366F1'  // indigo
+    ];
+
+    // For numerical traits, use a gradient or binning approach
+    if (typeof value === 'number') {
+      // Simple approach: use the value modulo colors length
+      const index = Math.floor(Math.abs(value)) % colors.length;
+      return colors[index];
+    }
+
+    // For categorical traits, create consistent color mapping
+    const stringValue = String(value);
+    const hash = stringValue.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
+  };
+
+  // Generate PCA data with custom coloring based on selected trait
+  const generatePCADataWithColoring = () => {
+    return currentSamples.map((sample, index) => {
+      const traitValue = (sample as any)[selectedColorTrait];
+      return {
+        x: Math.random() * 20 - 10 + (sample.condition === 'Control' ? -2 : 2),
+        y: Math.random() * 15 - 7.5 + (sample.batch === 'Batch_A' ? -1 : 1),
+        label: sample.name,
+        color: getColorForTraitValue(selectedColorTrait, traitValue),
+        metadata: sample
+      };
+    });
+  };
+
+  // Generate legend data for the selected trait
+  const getLegendData = () => {
+    if (selectedPlotType !== 'pca') return [];
+    
+    const uniqueValues = new Set<any>();
+    currentSamples.forEach(sample => {
+      const value = (sample as any)[selectedColorTrait];
+      if (value !== undefined && value !== null) {
+        uniqueValues.add(value);
+      }
+    });
+
+    return Array.from(uniqueValues)
+      .sort((a, b) => {
+        if (typeof a === 'string' && typeof b === 'string') {
+          return a.localeCompare(b);
+        }
+        return Number(a) - Number(b);
+      })
+      .map(value => ({
+        label: String(value),
+        color: getColorForTraitValue(selectedColorTrait, value)
+      }));
+  };
 
   const getPlotData = (): PlotPoint[] => {
-    // If no uploaded data, use mock data
+    // For PCA plots, always use custom coloring based on selected trait
+    if (selectedPlotType === 'pca') {
+      if (!uploadedData.isUploaded) {
+        return generatePCADataWithColoring();
+      } else {
+        // For uploaded data, apply coloring to existing PCA data or generate new colored data
+        if (realAnalysisData.pcaData.length > 0) {
+          return realAnalysisData.pcaData.map(point => ({
+            ...point,
+            color: getColorForTraitValue(selectedColorTrait, point.metadata?.[selectedColorTrait])
+          }));
+        } else {
+          return generatePCADataWithColoring();
+        }
+      }
+    }
+    
+    // For other plot types, use existing logic
     if (!uploadedData.isUploaded) {
       switch (selectedPlotType) {
-        case 'pca':
-          return generatePCAData();
         case 'volcano':
           return generateVolcanoData(selectedContrast);
         case 'ma':
@@ -59,8 +143,6 @@ export const Dashboard: React.FC = () => {
     
     // Use real analysis data if available for uploaded data
     switch (selectedPlotType) {
-      case 'pca':
-        return realAnalysisData.pcaData.length > 0 ? realAnalysisData.pcaData : [];
       case 'volcano':
         return realAnalysisData.volcanoData.length > 0 ? realAnalysisData.volcanoData : [];
       case 'ma':
@@ -234,8 +316,7 @@ export const Dashboard: React.FC = () => {
           <section>
             <SampleInfoTable
               samples={currentSamples}
-              availableTraits={uploadedData.availableTraits}
-              onSampleSelect={setSelectedSample}
+              availableTraits={currentTraits}
             />
           </section>
 
@@ -247,48 +328,22 @@ export const Dashboard: React.FC = () => {
                 onPlotChange={setSelectedPlotType}
               />
               
-              {/* Contrast Selector - only show for differential expression plots */}
-              {isDifferentialPlot && (
-                <ContrastSelector
-                  availableTraits={uploadedData.availableTraits}
-                  onContrastChange={handleContrastChange}
+              {/* Trait Selector - only show for PCA plots */}
+              {selectedPlotType === 'pca' && (
+                <TraitSelector
+                  availableTraits={currentTraits}
+                  samples={currentSamples}
+                  selectedTrait={selectedColorTrait}
+                  onTraitChange={setSelectedColorTrait}
                 />
               )}
               
-              {/* Sample Details */}
-              {selectedSample && (
-                <div className="bg-white rounded-lg shadow-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Sample Details</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Name:</span>
-                      <span className="font-medium">{selectedSample.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Condition:</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        selectedSample.condition === 'Control' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-orange-100 text-orange-800'
-                      }`}>
-                        {selectedSample.condition}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">RIN Score:</span>
-                      <span className={`font-medium ${
-                        selectedSample.rnaIntegrity >= 8 ? 'text-green-600' : 
-                        selectedSample.rnaIntegrity >= 7 ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
-                        {selectedSample.rnaIntegrity.toFixed(1)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Mapping Rate:</span>
-                      <span className="font-medium">{selectedSample.mappingRate.toFixed(1)}%</span>
-                    </div>
-                  </div>
-                </div>
+              {/* Contrast Selector - only show for differential expression plots */}
+              {isDifferentialPlot && (
+                <ContrastSelector
+                  availableTraits={currentTraits}
+                  onContrastChange={handleContrastChange}
+                />
               )}
             </div>
 
@@ -303,6 +358,7 @@ export const Dashboard: React.FC = () => {
                   data={getPlotData()}
                   config={getPlotConfig()}
                   onPointClick={handlePointClick}
+                  legendData={getLegendData()}
                 />
               </ErrorBoundary>
             </div>
